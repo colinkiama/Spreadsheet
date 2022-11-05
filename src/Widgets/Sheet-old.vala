@@ -4,7 +4,6 @@ using Gtk;
 using Cairo;
 using Spreadsheet.Models;
 using Spreadsheet.UI;
-using SpreadSheet.Structs;
 
 
 public class Spreadsheet.Widgets.Sheet : EventBox {
@@ -24,14 +23,12 @@ public class Spreadsheet.Widgets.Sheet : EventBox {
     public Page page { get; set; }
 
     private MainWindow window;
- 
+    
     // TODO: Use a collection of Cells to track selected cells.
     // public Gee.ArrayList<Cell?> selected_cells { get; set; }
-    public Gee.Set<Cell?> selected_cells { get; set; }
+    public Cell? selected_cell { get; set; }
 
-    public SelectionRange selection_range { get; set; }
-
-    public signal void selection_changed (Gee.Set<Cell?> new_selection);
+    public signal void selection_changed (Cell? new_selection);
 
     public signal void selection_cleared ();
 
@@ -41,7 +38,10 @@ public class Spreadsheet.Widgets.Sheet : EventBox {
         this.page = page;
         this.window = window;
         foreach (var cell in page.cells) {
-            selected_cells = new Gee.HashSet<Cell?> ();
+            if (selected_cell == null) {
+                selected_cell = cell;
+                cell.selected = true;
+            }
 
             cell.notify["display-content"].connect (() => {
                 queue_draw ();
@@ -140,18 +140,7 @@ public class Spreadsheet.Widgets.Sheet : EventBox {
 
     private void select (int line, int col) {
         // Do nothing if the new selected cell are the same with the currently selected
-        var next_selection_range  = SelectionRange () {
-            start = Position () {
-                column = col,
-                line = line
-            },
-            end = Position () {
-                column = col,
-                line = line
-            }
-        };
-
-        if (next_selection_range == selection_range) {
+        if (line == selected_cell.line && col == selected_cell.column) {
             return;
         }
 
@@ -159,60 +148,28 @@ public class Spreadsheet.Widgets.Sheet : EventBox {
             if (cell.selected) {
                 cell.selected = false;
                 // Unselect the cell if it was previously selected cell
-                if (selected_cells.size == 1 && selected_cells.contains (cell)) {
-                    selected_cells = new HashSet<Cell?> ();
-                    selection_range = SelectionRange () { 
-                        start = Position () {line = -1, column = -1},
-                        end = Position () {line = -1, column = -1},
-                    };
-
-                    selection_changed (selected_cells);
+                if (cell == selected_cell) {
+                    selected_cell = null;
+                    selection_changed (null);
                 }
             } else if (cell.line == line && cell.column == col) {
                 // Select the new cell
                 cell.selected = true;
-                var next_selected_cells = new HashSet<Cell?> ();
-                next_selected_cells.add (cell);
-                selected_cells = next_selected_cells;
-
-                selection_range = SelectionRange () { 
-                    start = Position () {line = line, column = col},
-                    end = Position () {line = line, column = col},
-                };
-
-                selection_changed (selected_cells);
+                selected_cell = cell;
+                selection_changed (cell);
             }
         }
         queue_draw ();
     }
 
-    //  private void move (int line_add, int col_add) {
-    //      // 
-    //      // Ignore key press to the outside of the sheet
-    //      if (selected_cell.line + line_add < 0 || selected_cell.column + col_add < 0) {
-    //          return;
-    //      }
-
-    //      if (selected_cell != null) {
-    //          select (selected_cell.line + line_add, selected_cell.column + col_add);
-    //      } else {
-    //          select (0, 0);
-    //      }
-    //  }
-
     private void move (int line_add, int col_add) {
-        // Ensure that only one cell is selected
-        if (selection_range.start != selection_range.end) {
-            return;
-        }
-
         // Ignore key press to the outside of the sheet
-        if (selection_range.start.line + line_add < 0 || selection_range.start.column + col_add < 0) {
+        if (selected_cell.line + line_add < 0 || selected_cell.column + col_add < 0) {
             return;
         }
 
-        if (selected_cells.size > 0) {
-            select ((int)selection_range.start.line + line_add, (int)selection_range.start.column + col_add);
+        if (selected_cell != null) {
+            select (selected_cell.line + line_add, selected_cell.column + col_add);
         } else {
             select (0, 0);
         }
@@ -305,7 +262,7 @@ public class Spreadsheet.Widgets.Sheet : EventBox {
             cr.rectangle (0, height + border + i * height, left_margin, height);
             cr.stroke ();
 
-            if (selection_range.start.line == i) {
+            if (selected_cell != null && selected_cell.line == i) {
                 cr.save ();
                 style.render_frame (cr, 0, height + border + i * height, left_margin, height);
                 cr.restore ();
@@ -332,7 +289,7 @@ public class Spreadsheet.Widgets.Sheet : EventBox {
             cr.rectangle (left_margin + border + i * width, 0, width, height);
             cr.stroke ();
 
-            if (selection_range.start.column == i) {
+            if (selected_cell != null && selected_cell.column == i) {
                 cr.save ();
                 style.render_frame (cr, left_margin + border + i * width, 0, width, height);
                 cr.restore ();

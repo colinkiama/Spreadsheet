@@ -38,8 +38,8 @@ public class Spreadsheet.UI.MainWindow : ApplicationWindow {
         }
     }
 
-    private SpreadSheet _file;
-    public SpreadSheet file {
+    private Spreadsheet.Models.SpreadSheet _file;
+    public Spreadsheet.Models.SpreadSheet file {
         get {
             return _file;
         }
@@ -74,16 +74,21 @@ public class Spreadsheet.UI.MainWindow : ApplicationWindow {
                         break;
                     }
                 }
-                sheet.selection_changed.connect ((cell) => {
+                sheet.selection_changed.connect ((cell_set) => {
                     style_popup.foreach ((ch) => {
                         style_popup.remove (ch);
                     });
-                    if (cell != null) {
-                        expression.text = cell.formula;
-                        function_list_bt.sensitive = true;
-                        expression.sensitive = true;
-                        style_toggle.sensitive = true;
-                        style_popup.add (new StyleModal (cell.font_style, cell.cell_style));
+                    if (cell_set.size > 0) {
+                        if (cell_set.size == 1) {
+                            cell_set.map<Cell> ((cell) => {
+                                expression.text = cell.formula;
+                                function_list_bt.sensitive = true;
+                                expression.sensitive = true;
+                                style_toggle.sensitive = true;
+                                style_popup.add (new StyleModal (cell.font_style, cell.cell_style));
+                                return cell;
+                            });
+                        }
                     } else {
                         expression.text = "";
                         function_list_bt.sensitive = false;
@@ -376,7 +381,7 @@ public class Spreadsheet.UI.MainWindow : ApplicationWindow {
         var page = new Page.empty ();
         page.title = _("Sheet 1");
 
-        var file = new SpreadSheet ();
+        var file = new Spreadsheet.Models.SpreadSheet ();
         file.title = file_name;
         file.file_path = path.get_path ();
         file.add_page (page);
@@ -532,57 +537,57 @@ public class Spreadsheet.UI.MainWindow : ApplicationWindow {
     }
 
     private void update_formula () {
-        if (active_sheet.selected_cell != null) {
-            history_manager.do_action (new HistoryAction<string?, Cell> (
-                @"Change the formula to $(expression.text)",
-                active_sheet.selected_cell,
-                (_text, _target) => {
-                    string text = _text == null ? expression.text : (string)_text;
-                    Cell target = (Cell)_target;
+        //  if (active_sheet.selected_cell != null) {
+        //      history_manager.do_action (new HistoryAction<string?, Cell> (
+        //          @"Change the formula to $(expression.text)",
+        //          active_sheet.selected_cell,
+        //          (_text, _target) => {
+        //              string text = _text == null ? expression.text : (string)_text;
+        //              Cell target = (Cell)_target;
 
-                    string last_text = target.formula;
-                    target.formula = text;
+        //              string last_text = target.formula;
+        //              target.formula = text;
 
-                    var undo_data = last_text;
-                    return new StateChange<string> (undo_data, text);
-                },
-                (_text, _target) => {
-                    string text = (string)_text;
-                    Cell target = (Cell)_target;
+        //              var undo_data = last_text;
+        //              return new StateChange<string> (undo_data, text);
+        //          },
+        //          (_text, _target) => {
+        //              string text = (string)_text;
+        //              Cell target = (Cell)_target;
 
-                    target.formula = text;
-                    expression.text = text;
-                }
-            ));
-        }
-        header.update_header ();
-        active_sheet.move_bottom ();
-        active_sheet.grab_focus ();
+        //              target.formula = text;
+        //              expression.text = text;
+        //          }
+        //      ));
+        //  }
+        //  header.update_header ();
+        //  active_sheet.move_bottom ();
+        //  active_sheet.grab_focus ();
     }
 
     private void clear_formula () {
-        if (active_sheet.selected_cell != null) {
-            history_manager.do_action (new HistoryAction<string?, Cell> (
-                "Clear the formula",
-                active_sheet.selected_cell,
-                (_text, _target) => {
-                    Cell target = (Cell)_target;
-                    string undo_data = target.formula;
-                    target.formula = "";
-                    expression.text = "";
-                    return new StateChange<string> (undo_data, "");
-                },
-                (_text, _target) => {
-                    string text = (string)_text;
-                    Cell target = (Cell)_target;
+        //  if (active_sheet.selected_cell != null) {
+        //      history_manager.do_action (new HistoryAction<string?, Cell> (
+        //          "Clear the formula",
+        //          active_sheet.selected_cell,
+        //          (_text, _target) => {
+        //              Cell target = (Cell)_target;
+        //              string undo_data = target.formula;
+        //              target.formula = "";
+        //              expression.text = "";
+        //              return new StateChange<string> (undo_data, "");
+        //          },
+        //          (_text, _target) => {
+        //              string text = (string)_text;
+        //              Cell target = (Cell)_target;
 
-                    target.formula = text;
-                    expression.text = text;
-                }
-            ));
-        }
-        header.update_header ();
-        active_sheet.grab_focus ();
+        //              target.formula = text;
+        //              expression.text = text;
+        //          }
+        //      ));
+        //  }
+        //  header.update_header ();
+        //  active_sheet.grab_focus ();
     }
 
     // From http://stackoverflow.com/questions/4183546/how-can-i-draw-image-with-rounded-corners-in-cairo-gtk

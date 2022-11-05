@@ -63,6 +63,8 @@ sources = files(
     'src' / 'Services' / 'Parsing' / 'Token.vala',
     'src' / 'Services' / 'FuncSearchList.vala',
     'src' / 'Services' / 'HistoryManager.vala',
+    'src' / 'Structs' / 'Position.vala',
+    'src' / 'Structs' / 'SelectionRange.vala',    
     'src' / 'UI' / 'MainWindow.vala',
     'src' / 'UI' / 'TitleBar.vala',
     'src' / 'Widgets' / 'ActionBar.vala',
